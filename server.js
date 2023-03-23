@@ -132,7 +132,42 @@ const addEmployee = async () => {
     const [result,] = await db.promise().query("INSERT INTO employee SET ?", { first_name: firstName, last_name: lastName, role_id: roleId, manager_id: managerId, department_id: departmentId });
     console.log(`Added new employee with ID ${result.insertId}.`);
 };
-
+// remove an employee
+const removeEmployee = async () => {
+    // Get list of employees
+    const [employeeRows, _] = await db.promise().query("SELECT id, first_name, last_name FROM employee;");
+    const employeeChoices = employeeRows.map(employee => ({ name: `${employee.first_name} ${employee.last_name}`, value: employee.id }));
+    // prompt the user to choose an employee to remove
+    const { employeeId } = await inquirer.prompt([
+        {
+            type: 'list',
+            name: 'employeeId',
+            message: 'Which employee do you want to remove?',
+            choices: employeeChoices
+        }
+    ]);
+    // delete the employee from the database
+    await db.promise().query("DELETE FROM employee WHERE id = ?;", [employeeId]);
+    console.log(`Removed employee with ID ${employeeId}.`);
+}
+// remove a role
+const removeRole = async () => {
+    // Get list of roles
+    const [roleRows, _] = await db.promise().query("SELECT role.id, role.title, department.name FROM role JOIN department ON role.department_id = department.id;");
+    const roleChoices = roleRows.map(role => ({ name: `${role.title} (${role.name})`, value: role.id }));
+    // prompt the user to choose which role to remove
+    const { roleID } = await inquirer.prompt([
+        {
+            type: 'list',
+            name: 'roleID',
+            message: 'Which role do you want to remove?',
+            choices: roleChoices
+        }
+    ]);
+    // delete the selected role from the database
+    await db.promise().query("DELETE FROM role WHERE id = ?;", [roleId]);
+    console.log(`Removed role with ID ${roleId}.`);
+}
 // Query database
 const run = async () => {
     let appRunning = true;
@@ -159,30 +194,39 @@ const run = async () => {
             },
 
         ])
-        if (results.menu === "View all employees") {
-            viewEmployees();
-        }
-        if (results.menu === "View all roles") {
-            viewAllRoles();
-        }
-        if (results.menu === "View all departments") {
-            viewAllDepartments();
-        }
-        if (results.menu === "View employees by department") {
-            viewEmployeesByDept();
-        }
-        if (results.menu === "Add role") {
-            addRole();
-        }
-        if (results.menu === "Add employee") {
-            addEmployee();
-        }
-        if (results.menu === "Add department") {
-            addDepartment();
-        }
-        if (results.menu === "Quit application") {
 
-            process.exit(0);
+        switch (results.menu) {
+            case "View all employees":
+                await viewEmployees();
+                break;
+            case "View all roles":
+                await viewAllRoles();
+                break;
+            case "View all departments":
+                await viewAllDepartments();
+                break;
+            case "View employees by department":
+                await viewEmployeesByDept();
+                break;
+            case "Add department":
+                await addDepartment();
+                break;
+            case "Add role":
+                await addRole();
+                break;
+            case "Add employee":
+                await addEmployee();
+                break;
+            case "Remove employee":
+                await removeEmployee();
+                break;
+            case "Remove role":
+                await removeRole();
+                break;
+            case "Quit application":
+                appRunning = false;
+                // break;
+                process.exit(0);
         }
     }
 }
